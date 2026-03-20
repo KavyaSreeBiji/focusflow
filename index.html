@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FocusFlow — Tasks & Habits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8">
+          <path d="M3 9l4 4 8-8"/>
+          <circle cx="9" cy="9" r="7.5" stroke-opacity=".4"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>FocusFlow</h1>
+        <p id="view-sub">Tasks & Habits — all in one place</p>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn t-tasks active" id="btn-tasks" onclick="switchView('tasks')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/>
+          <path d="M5.5 8l2 2 3.5-3.5"/>
+        </svg>
+        <span>Tasks</span>
+      </button>
+      <button class="tab-btn t-habits" id="btn-habits" onclick="switchView('habits')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="8" cy="8" r="5.5"/>
+          <path d="M8 5.5V8l1.5 1.5"/>
+        </svg>
+        <span>Habits</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- DAILY QUOTE -->
+  <div class="daily-quote-container" id="daily-quote-container">
+    <p class="daily-quote-text" id="daily-quote-text">Loading...</p>
+    <p class="daily-quote-author" id="daily-quote-author"></p>
+  </div>
+
+  <!-- ======== TASKS VIEW ======== -->
+  <div id="view-tasks">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(99,102,241,.15)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#818cf8" stroke-width="1.6">
+            <rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8l2 2 3.5-3.5"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="t-total">0</div>
+        <div class="stat-lbl">Total</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#4f46e5"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#10b981" stroke-width="1.6">
+            <path d="M3 8l3 3 7-7"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="t-done">0</div>
+        <div class="stat-lbl">Completed</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="t-bar-done" style="width:0%;background:#10b981"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="1.6">
+            <circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="t-pending">0</div>
+        <div class="stat-lbl">Pending</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="t-bar-pend" style="width:0%;background:#f59e0b"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(239,68,68,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="1.6">
+            <path d="M8 5v4M8 11.5v.5"/><circle cx="8" cy="8" r="5.5"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="t-overdue">0</div>
+        <div class="stat-lbl">Overdue</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="t-bar-ov" style="width:0%;background:#ef4444"></div></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L13 13"/>
+        </svg>
+        <input type="text" id="t-search" placeholder="Search tasks…" oninput="renderTasks()"/>
+      </div>
+      <select class="filter-sel" id="t-cat" onchange="renderTasks()">
+        <option value="">All categories</option>
+        <option value="work">Work</option>
+        <option value="personal">Personal</option>
+        <option value="health">Health</option>
+        <option value="finance">Finance</option>
+        <option value="learning">Learning</option>
+        <option value="social">Social</option>
+        <option value="other">Other</option>
+      </select>
+      <select class="filter-sel" id="t-prio" onchange="renderTasks()">
+        <option value="">All priorities</option>
+        <option value="high">🔴 High</option>
+        <option value="medium">🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
+      <select class="filter-sel" id="t-status" onchange="renderTasks()">
+        <option value="">All status</option>
+        <option value="active">Active</option>
+        <option value="done">Done</option>
+      </select>
+      <button class="add-btn btn-indigo" onclick="toggleTaskForm()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3v10M3 8h10"/></svg>
+        Add task
+      </button>
+    </div>
+
+    <div class="add-form" id="task-form">
+      <div class="form-row">
+        <div class="form-group flex2">
+          <label class="form-label">Task title</label>
+          <input type="text" id="tf-title" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter')addTask()"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="tf-cat">
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="health">Health</option>
+            <option value="finance">Finance</option>
+            <option value="learning">Learning</option>
+            <option value="social">Social</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select id="tf-prio">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due date</label>
+          <input type="date" id="tf-due"/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save btn-indigo" onclick="addTask()">Add task</button>
+        <button class="btn-cancel" onclick="toggleTaskForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="task-list" id="task-list"></div>
+  </div>
+
+  <!-- ======== HABITS VIEW ======== -->
+  <div id="view-habits" style="display:none">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(139,92,246,.15)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#a78bfa" stroke-width="1.6">
+            <circle cx="8" cy="8" r="5.5"/><path d="M8 5.5V8l1.5 1.5"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="h-total">0</div>
+        <div class="stat-lbl">Habits</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#7c3aed"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#10b981" stroke-width="1.6">
+            <path d="M3 8l3 3 7-7"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="h-today">0</div>
+        <div class="stat-lbl">Done today</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="h-bar-today" style="width:0%;background:#10b981"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="1.6">
+            <path d="M8 2c0 4-5 4-5 9h10c0-5-5-5-5-9zM6 14h4"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="h-streak">0</div>
+        <div class="stat-lbl">Best streak</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:100%;background:#f59e0b"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(6,182,212,.12)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#06b6d4" stroke-width="1.6">
+            <path d="M2 12l4-4 3 3 5-7"/>
+          </svg>
+        </div>
+        <div class="stat-val" id="h-rate">0%</div>
+        <div class="stat-lbl">Week rate</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="h-bar-rate" style="width:0%;background:#06b6d4"></div></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L13 13"/>
+        </svg>
+        <input type="text" id="h-search" placeholder="Search habits…" oninput="renderHabits()"/>
+      </div>
+      <button class="add-btn btn-violet" onclick="toggleHabitForm()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3v10M3 8h10"/></svg>
+        Add habit
+      </button>
+    </div>
+
+    <div class="hcat-bar" id="hcat-bar">
+      <div class="hcat-pill active" onclick="filterHcat(this,'')">All</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'wellness')">Wellness</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'fitness')">Fitness</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'mindset')">Mindset</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'learning')">Learning</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'social')">Social</div>
+      <div class="hcat-pill" onclick="filterHcat(this,'other')">Other</div>
+    </div>
+
+    <div class="add-form" id="habit-form">
+      <div class="form-row">
+        <div class="form-group flex2">
+          <label class="form-label">Habit name</label>
+          <input type="text" id="hf-name" placeholder="e.g. Morning meditation" onkeydown="if(event.key==='Enter')addHabit()"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="hf-cat">
+            <option value="wellness">Wellness</option>
+            <option value="fitness">Fitness</option>
+            <option value="mindset">Mindset</option>
+            <option value="learning">Learning</option>
+            <option value="social">Social</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frequency</label>
+          <select id="hf-freq">
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekends">Weekends</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon</label>
+          <select id="hf-icon">
+            <option value="🧘">🧘 Meditate</option>
+            <option value="🏃">🏃 Run</option>
+            <option value="📖">📖 Read</option>
+            <option value="💧">💧 Hydrate</option>
+            <option value="🥗">🥗 Eat well</option>
+            <option value="😴">😴 Sleep</option>
+            <option value="✍️">✍️ Journal</option>
+            <option value="🎯">🎯 Focus</option>
+            <option value="🏋️">🏋️ Workout</option>
+            <option value="🎨">🎨 Create</option>
+            <option value="🧠">🧠 Learn</option>
+            <option value="🤝">🤝 Connect</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save btn-violet" onclick="addHabit()">Add habit</button>
+        <button class="btn-cancel" onclick="toggleHabitForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="habit-list" id="habit-list"></div>
+  </div>
+
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script src="script.js"></script>
+</body>
+</html>
