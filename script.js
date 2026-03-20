@@ -8,38 +8,126 @@ const WEEK = Array.from({length:7}, (_,i) => {
   return d.toISOString().split('T')[0];
 });
 
-/* ---------- STORAGE (localStorage) ---------- */
-function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
-}
-function load(key, def) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw !== null ? JSON.parse(raw) : def;
-  } catch(e) { return def; }
-}
+/* ---------- INIT SUPABASE ---------- */
+const supabaseUrl = 'https://xilbfdoeurpaomcwxvos.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpbGJmZG9ldXJwYW9tY3d4dm9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDA4NjQsImV4cCI6MjA4OTU3Njg2NH0.TEzkdVDFrK0rLMvnKtctZrBrujGgCT3ZIEPnbRwMYrY';
+const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 /* ---------- STATE ---------- */
-let tasks  = load('ff2-tasks', [
-  {id:1, title:'Review Q1 report',         cat:'work',     prio:'high',   due:'2026-03-22', done:false},
-  {id:2, title:'Book dentist appointment', cat:'health',   prio:'medium', due:'2026-03-28', done:false},
-  {id:3, title:'Pay electricity bill',     cat:'finance',  prio:'high',   due:'2026-03-21', done:false},
-  {id:4, title:'Read design patterns',     cat:'learning', prio:'low',    due:'2026-03-30', done:true},
-]);
-let habits = load('ff2-habits', [
-  {id:1, name:'Morning meditation', icon:'🧘', cat:'mindset',  freq:'daily', checked:{}},
-  {id:2, name:'30 min run',         icon:'🏃', cat:'fitness',  freq:'daily', checked:{}},
-  {id:3, name:'Drink 8 glasses',    icon:'💧', cat:'wellness', freq:'daily', checked:{}},
-  {id:4, name:'Read 20 pages',      icon:'📖', cat:'learning', freq:'daily', checked:{}},
-]);
-let nextTId   = load('ff2-ntid', 100);
-let nextHId   = load('ff2-nhid', 100);
-let curView   = 'tasks';
+let currentUser = null;
+let tasks = [];
+let habits = [];
+let curView = 'tasks';
 let activeHCat = '';
-let dragSrc   = null;
+let dragSrc = null;
 
-function saveTasks()  { save('ff2-tasks', tasks);  save('ff2-ntid', nextTId); }
-function saveHabits() { save('ff2-habits', habits); save('ff2-nhid', nextHId); }
+// Auth Listeners & Setup
+async function handleSession(session) {
+  if (session && session.user) {
+    currentUser = session.user;
+    document.getElementById('view-auth').style.display = 'none';
+    document.getElementById('site-header').style.display = 'flex';
+    document.getElementById('view-tasks').style.display = curView === 'tasks' ? '' : 'none';
+    document.getElementById('view-habits').style.display = curView === 'habits' ? '' : 'none';
+    await fetchData();
+  } else {
+    currentUser = null;
+    document.getElementById('view-auth').style.display = 'flex';
+    document.getElementById('site-header').style.display = 'none';
+    document.getElementById('view-tasks').style.display = 'none';
+    document.getElementById('view-habits').style.display = 'none';
+  }
+}
+
+// Initial Check
+db.auth.getSession().then(({ data: { session } }) => {
+  handleSession(session);
+});
+
+// Event Listener for Login/Logout
+db.auth.onAuthStateChange((event, session) => {
+  handleSession(session);
+});
+
+async function fetchData() {
+  const { data: tData } = await db.from('tasks').select('*').order('created_at', { ascending: false });
+  const { data: hData } = await db.from('habits').select('*').order('created_at', { ascending: true });
+  tasks = tData || [];
+  habits = hData || [];
+  renderTasks();
+  renderHabits();
+}
+
+/* ---------- AUTH LOGIC ---------- */
+const authForm = document.getElementById('auth-form');
+const btnLogout = document.getElementById('btn-logout');
+const errP = document.getElementById('auth-error');
+let authMode = 'login';
+
+// Tab switching — use closest() to fix text-node click bug
+document.querySelectorAll('.auth-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    authMode = this.dataset.mode;
+    const submitBtn = document.getElementById('btn-auth-submit');
+    if (submitBtn) submitBtn.textContent = authMode === 'login' ? 'Log In' : 'Create Account';
+    if (errP) errP.textContent = '';
+  });
+});
+
+if (authForm) {
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const submitBtn = document.getElementById('btn-auth-submit');
+    
+    // Show loading state
+    const origText = submitBtn ? submitBtn.textContent : '';
+    if (submitBtn) { submitBtn.textContent = 'Please wait...'; submitBtn.disabled = true; }
+    if (errP) errP.textContent = '';
+    
+    if (authMode === 'signup') {
+      const { error } = await db.auth.signUp({ email, password });
+      if (error) {
+        if (errP) errP.textContent = error.message;
+        if (submitBtn) { submitBtn.textContent = origText; submitBtn.disabled = false; }
+      } else {
+        if (errP) { errP.style.color = 'var(--green)'; errP.textContent = '✅ Account created! Check your email to confirm, then log in.'; }
+        if (submitBtn) { submitBtn.textContent = origText; submitBtn.disabled = false; }
+      }
+    } else {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (errP) { errP.style.color = 'var(--red)'; errP.textContent = error.message; }
+        if (submitBtn) { submitBtn.textContent = origText; submitBtn.disabled = false; }
+      } else {
+        if (errP) errP.textContent = '';
+      }
+    }
+  });
+}
+
+const btnForgot = document.getElementById('btn-forgot-pw');
+if (btnForgot) {
+  btnForgot.addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value;
+    if (!email) {
+      errP.textContent = 'Please enter your email address to reset password.';
+      return;
+    }
+    const { error } = await db.auth.resetPasswordForEmail(email);
+    if (error) errP.textContent = error.message;
+    else errP.textContent = 'Password reset link sent to your email!';
+  });
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener('click', async () => {
+    await db.auth.signOut();
+  });
+}
 
 /* ---------- TOAST ---------- */
 let toastTimer;
@@ -73,39 +161,51 @@ function toggleTaskForm() {
   if (f.classList.contains('open')) document.getElementById('tf-title').focus();
 }
 
-function addTask() {
+async function addTask() {
   const title = document.getElementById('tf-title').value.trim();
-  if (!title) return;
-  tasks.unshift({
-    id: nextTId++,
+  if (!title || !currentUser) return;
+  
+  const newTask = {
+    user_id: currentUser.id,
     title,
     cat:  document.getElementById('tf-cat').value,
     prio: document.getElementById('tf-prio').value,
-    due:  document.getElementById('tf-due').value,
+    due:  document.getElementById('tf-due').value || null,
     done: false
-  });
-  saveTasks();
-  document.getElementById('tf-title').value = '';
-  document.getElementById('tf-due').value   = '';
-  document.getElementById('task-form').classList.remove('open');
-  renderTasks();
-  showToast('Task added', '📌');
+  };
+  
+  const { data, error } = await supabase.from('tasks').insert(newTask).select();
+  if (!error && data) {
+    tasks.unshift(data[0]);
+    document.getElementById('tf-title').value = '';
+    document.getElementById('tf-due').value   = '';
+    document.getElementById('task-form').classList.remove('open');
+    renderTasks();
+    showToast('Task added', '📌');
+  }
 }
 
-function toggleTask(id) {
+async function toggleTask(id) {
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   t.done = !t.done;
-  saveTasks();
-  renderTasks();
-  if (t.done) showToast('Task completed!', '✅');
+  
+  const { error } = await supabase.from('tasks').update({ done: t.done }).eq('id', id);
+  if (!error) {
+    renderTasks();
+    if (t.done) showToast('Task completed!', '✅');
+  } else {
+    t.done = !t.done; // Revert locally if network fails
+  }
 }
 
-function deleteTask(id) {
-  tasks = tasks.filter(x => x.id !== id);
-  saveTasks();
-  renderTasks();
-  showToast('Task deleted', '🗑');
+async function deleteTask(id) {
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  if (!error) {
+    tasks = tasks.filter(x => x.id !== id);
+    renderTasks();
+    showToast('Task deleted', '🗑');
+  }
 }
 
 function dueInfo(due) {
@@ -234,38 +334,50 @@ function toggleHabitForm() {
   if (f.classList.contains('open')) document.getElementById('hf-name').focus();
 }
 
-function addHabit() {
+async function addHabit() {
   const name = document.getElementById('hf-name').value.trim();
-  if (!name) return;
-  habits.push({
-    id:      nextHId++,
+  if (!name || !currentUser) return;
+  
+  const newHabit = {
+    user_id: currentUser.id,
     name,
     icon:    document.getElementById('hf-icon').value,
     cat:     document.getElementById('hf-cat').value,
     freq:    document.getElementById('hf-freq').value,
     checked: {}
-  });
-  saveHabits();
-  document.getElementById('hf-name').value = '';
-  document.getElementById('habit-form').classList.remove('open');
-  renderHabits();
-  showToast('Habit added', '🎯');
+  };
+  
+  const { data, error } = await supabase.from('habits').insert(newHabit).select();
+  if (!error && data) {
+    habits.push(data[0]);
+    document.getElementById('hf-name').value = '';
+    document.getElementById('habit-form').classList.remove('open');
+    renderHabits();
+    showToast('Habit added', '🎯');
+  }
 }
 
-function deleteHabit(id) {
-  habits = habits.filter(h => h.id !== id);
-  saveHabits();
-  renderHabits();
-  showToast('Habit deleted', '🗑');
+async function deleteHabit(id) {
+  const { error } = await supabase.from('habits').delete().eq('id', id);
+  if (!error) {
+    habits = habits.filter(h => h.id !== id);
+    renderHabits();
+    showToast('Habit deleted', '🗑');
+  }
 }
 
-function toggleDay(hid, day) {
+async function toggleDay(hid, day) {
   const h = habits.find(x => x.id === hid);
   if (!h) return;
   h.checked[day] = !h.checked[day];
-  saveHabits();
-  renderHabits();
-  if (h.checked[day]) showToast('Keep it up! 🔥', '✓');
+  
+  const { error } = await supabase.from('habits').update({ checked: h.checked }).eq('id', hid);
+  if (!error) {
+    renderHabits();
+    if (h.checked[day]) showToast('Keep it up! 🔥', '✓');
+  } else {
+    h.checked[day] = !h.checked[day]; // Revert locally on fail
+  }
 }
 
 function filterHcat(el, cat) {

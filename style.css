@@ -97,6 +97,128 @@ body::before {
 }
 
 /* ============================================================
+   AUTH VIEW
+============================================================ */
+#view-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  position: relative;
+  z-index: 10;
+}
+
+.auth-card {
+  background: rgba(22, 24, 31, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border2);
+  padding: 48px 40px;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  transform: translateZ(30px);
+}
+
+.auth-toggle {
+  display: flex;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  padding: 4px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-xs);
+  color: var(--text3);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--t);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.auth-tab.active {
+  background: var(--bg4);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.input-group svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text3);
+}
+
+.input-group input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 14px;
+  padding: 12px 14px 12px 42px;
+  outline: none;
+  transition: var(--t);
+}
+
+.input-group input:focus {
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px var(--indigo-glow);
+}
+
+.input-group input::placeholder {
+  color: var(--text3);
+}
+
+.auth-links {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+  margin-bottom: 24px;
+}
+
+.auth-links a {
+  font-size: 13px;
+  color: var(--text3);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--t);
+  font-weight: 500;
+}
+
+.auth-links a:hover {
+  color: var(--indigo2);
+}
+
+.error-msg {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 16px;
+  text-align: center;
+  min-height: 20px;
+}
+
+/* ============================================================
    HEADER
 ============================================================ */
 .site-header {
